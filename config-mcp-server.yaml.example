@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=../../schema/local.json
+config:
+  adminAddr: "0.0.0.0:15000"
+  logging:
+  format: json
+  level: debug  # 啟用 debug 日誌以診斷問題
+
+binds:
+- port: 3000
+  listeners:
+  - routes:
+    - policies:
+        cors:
+          allowOrigins:
+            - "*"
+          allowHeaders:
+            - "*"
+      backends:
+      - mcp:
+          targets:
+          - name: mcp-server-development-guide
+            mcp:
+              host: http://mcp-server-development-guide:1024/mcp # 當 MCP SERVER 與 AgentGateway 同一主機時，使用容器名稱通過 Docker DNS 解析
+          - name: WiKM
+            mcp:
+              host: http://10.28.121.10:8024/mcp
+          - name: Wistron-LION-KPI
+            mcp:
+              host: http://10.28.120.3:1024/mcp

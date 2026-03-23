@@ -1,0 +1,19 @@
+services:
+  agentgateway-registration-guide:
+    container_name: agentgateway-registration-guide
+    image: ghcr.io/agentgateway/agentgateway:latest@sha256:5f66ed5e05c1d51f007448195d939f9adb2bb4ddd70c0a415af38d4a498066a1
+    command: ["-f", "/config/config.yaml"]
+    ports:
+      - "32110:32110"          # MCP proxy endpoint
+      - "0.0.0.0:32111:15000" # Admin UI
+    volumes:
+      - ./config.yaml:/config/config.yaml:ro
+    restart: unless-stopped
+
+    networks: # 使用自定義網路以便容器間通訊
+      - agentgateway-network
+
+networks:
+  agentgateway-network: 
+    name: agentgateway-network
+    driver: bridge 

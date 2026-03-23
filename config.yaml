@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=../../schema/local.json
+config:
+  adminAddr: "0.0.0.0:15000"
+  logging:
+    format: json
+    level: debug  # 啟用 debug 日誌以診斷問題
+
+binds:
+- port: 32110
+  listeners:
+  - routes:
+    - policies:
+        cors:
+          allowOrigins:
+            - "*"
+          allowHeaders:
+            - "*"
+      backends:
+      - mcp:
+          targets:
+          - name: Wistron-LION-KPI
+            mcp:
+              host: http://10.28.120.3:1024/mcp
