@@ -2,11 +2,10 @@
 config:
   adminAddr: "0.0.0.0:15000"
   logging:
-  format: json
-  level: debug  # 啟用 debug 日誌以診斷問題
+    filter: debug  # 日誌級別 (debug, info, warn, error)
 
 binds:
-- port: 3000
+- port: 32110
   listeners:
   - routes:
     - policies:
@@ -14,7 +13,11 @@ binds:
           allowOrigins:
             - "*"
           allowHeaders:
-            - "*"
+            - content-type
+            - mcp-protocol-version
+            - cache-control
+          exposeHeaders:
+            - Mcp-Session-Id
       backends:
       - mcp:
           targets:

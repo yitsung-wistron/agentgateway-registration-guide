@@ -1,7 +1,7 @@
 services:
   agentgateway-registration-guide:
     container_name: agentgateway-registration-guide
-    image: ghcr.io/agentgateway/agentgateway:latest@sha256:5f66ed5e05c1d51f007448195d939f9adb2bb4ddd70c0a415af38d4a498066a1
+    image: ghcr.io/agentgateway/agentgateway:0.8.2
     command: ["-f", "/config/config.yaml"]
     ports:
       - "32110:32110"          # MCP proxy endpoint

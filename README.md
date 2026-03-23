@@ -155,7 +155,7 @@ AgentGateway 作為中間層：
 
 | 技術 | 版本 | 用途 |
 |------|------|------|
-| **AgentGateway** | v0.12.0 (pinned) | MCP 代理服務器 (Rust) |
+| **AgentGateway** | 0.8.2 | MCP 代理服務器 (Rust) |
 | **Docker** | Latest | 容器化環境 |
 | **Docker Compose** | Latest | 容器編排 |
 | **YAML** | - | 配置文件格式 |
@@ -250,8 +250,8 @@ docker compose logs -f agentgateway-registration-guide
 成功啟動後會看到：
 
 ```
-agentgateway-registration-guide  | {"level":"info","scope":"agentgateway::app","message":"serving UI at http://0.0.0.0:15000/ui"}
-agentgateway-registration-guide  | {"level":"info","scope":"agentgateway::proxy::gateway","message":"started bind","bind":"bind/32110"}
+agentgateway-registration-guide  | 2026-03-23T07:49:14.478Z	info	agentgateway::app	serving UI at http://0.0.0.0:15000/ui
+agentgateway-registration-guide  | 2026-03-23T07:49:14.479Z	info	agentgateway::proxy::gateway	started bind	bind/32110
 ```
 
 ### 5. 驗證服務
@@ -355,7 +355,7 @@ AgentGateway 的主配置文件，包含：
 services:
   agentgateway-registration-guide:
     container_name: agentgateway-registration-guide
-    image: ghcr.io/agentgateway/agentgateway:latest@sha256:5f66ed5e05c1d51f007448195d939f9adb2bb4ddd70c0a415af38d4a498066a1
+    image: ghcr.io/agentgateway/agentgateway:0.8.2
     command: ["-f", "/config/config.yaml"]
 
     ports:
@@ -381,7 +381,7 @@ networks:
 | 配置項 | 說明 | 注意事項 |
 |--------|------|----------|
 | `container_name` | 容器名稱 | 用於 Docker DNS 解析 |
-| `image` | AgentGateway 映像 | 使用 digest 固定版本確保可重現性 |
+| `image` | AgentGateway 映像 | 使用版本 tag 確保跨平台一致性 |
 | `command` | 啟動命令 | 指定配置文件路徑 |
 | `ports` | 端口映射 | 32110 (代理), 32111 (UI) |
 | `volumes` | 文件掛載 | `:ro` 表示唯讀掛載 |
@@ -408,8 +408,7 @@ networks:
 config:
   adminAddr: "0.0.0.0:15000"  # 管理介面監聽地址
   logging:
-    format: json              # 日誌格式 (json 或 text)
-    level: debug              # 日誌級別 (debug, info, warn, error)
+    filter: debug              # 日誌級別 (debug, info, warn, error)
 
 binds:
 - port: 32110                  # MCP 代理監聽端口
@@ -420,7 +419,11 @@ binds:
           allowOrigins:       # CORS 允許的來源
             - "*"
           allowHeaders:       # CORS 允許的標頭
-            - "*"
+            - content-type
+            - mcp-protocol-version
+            - cache-control
+          exposeHeaders:      # CORS 暴露的標頭
+            - Mcp-Session-Id
       backends:
       - mcp:
           targets:
@@ -444,8 +447,7 @@ config:
   adminAddr: "0.0.0.0:15000"  # 管理介面綁定地址
                                # 0.0.0.0 表示監聽所有網路介面
   logging:
-    format: json               # 推薦使用 json 格式便於日誌分析
-    level: debug               # 生產環境可改為 info
+    filter: debug               # 生產環境可改為 info
 ```
 
 **2. binds 區塊**
@@ -460,7 +462,11 @@ binds:
           allowOrigins:
             - "*"              # 開發環境可用 *，生產環境應指定具體域名
           allowHeaders:
-            - "*"              # 允許所有標頭
+            - content-type
+            - mcp-protocol-version
+            - cache-control
+          exposeHeaders:
+            - Mcp-Session-Id
 ```
 
 **3. backends 區塊（關鍵）**
@@ -685,7 +691,7 @@ docker compose up -d
 docker compose logs -f agentgateway-registration-guide
 
 # 等待看到成功訊息
-# {"level":"info","scope":"agentgateway::proxy::gateway","message":"started bind","bind":"bind/32110"}
+# 2026-03-23T07:49:14.479Z	info	agentgateway::proxy::gateway	started bind	bind/32110
 ```
 
 #### 4. 驗證註冊狀態
@@ -703,7 +709,7 @@ docker compose logs -f agentgateway-registration-guide
 docker compose logs agentgateway-registration-guide | grep -i mcp
 
 # 成功時會看到類似:
-# {"level":"debug","msg":"Connected to MCP server","name":"mcp-server-development-guide"}
+# 2026-03-23T07:49:14.480Z	debug	Connected to MCP server	mcp-server-development-guide
 ```
 
 #### 5. 調用 MCP 工具
@@ -725,7 +731,7 @@ AgentGateway 會自動路由請求到正確的 MCP Server。
 docker compose logs -f agentgateway-registration-guide
 
 # 過濾特定級別
-docker compose logs -f | grep '"level":"error"'
+docker compose logs -f | grep 'error'
 ```
 
 **Web UI 監控**:
@@ -1496,6 +1502,12 @@ services:
 cors:
   allowOrigins:
     - "*"
+  allowHeaders:
+    - content-type
+    - mcp-protocol-version
+    - cache-control
+  exposeHeaders:
+    - Mcp-Session-Id
 
 # ✅ 生產環境應指定具體域名
 cors:
@@ -1503,8 +1515,11 @@ cors:
     - "https://your-app.example.com"
     - "https://api.example.com"
   allowHeaders:
-    - "Content-Type"
-    - "Authorization"
+    - content-type
+    - mcp-protocol-version
+    - cache-control
+  exposeHeaders:
+    - Mcp-Session-Id
 ```
 
 ---
@@ -1594,8 +1609,7 @@ cd agentgateway-registration-guide
 config:
   adminAddr: "0.0.0.0:15000"
   logging:
-    format: json
-    level: debug
+    filter: debug
 
 binds:
 - port: 32110
@@ -1606,7 +1620,11 @@ binds:
           allowOrigins:
             - "*"
           allowHeaders:
-            - "*"
+            - content-type
+            - mcp-protocol-version
+            - cache-control
+          exposeHeaders:
+            - Mcp-Session-Id
       backends:
       - mcp:
           targets:
@@ -1789,24 +1807,24 @@ docker compose logs agentgateway-registration-guide | grep -i error
 
 **A**:
 
-由於我們使用 digest 固定版本，更新需要修改 `docker-compose.yml` 中的映像 digest：
+由於我們使用版本 tag 固定版本，更新只需修改 `docker-compose.yml` 中的映像版本 tag：
 
 ```bash
-# 1. 查看最新可用的映像版本
-docker pull ghcr.io/agentgateway/agentgateway:latest
-docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/agentgateway/agentgateway:latest
+# 1. 查看最新可用的版本 tag
+#    參考: https://github.com/agentgateway/agentgateway/pkgs/container/agentgateway
 
-# 2. 將新的 digest 更新到 docker-compose.yml 的 image 欄位
-#    image: ghcr.io/agentgateway/agentgateway:latest@sha256:<新的digest>
+# 2. 將新的版本 tag 更新到 docker-compose.yml 的 image 欄位
+#    image: ghcr.io/agentgateway/agentgateway:<新版本號>
 
-# 3. 重啟服務以使用新映像
+# 3. 拉取新映像並重啟服務
+docker compose pull
 docker compose up -d
 
 # 4. 查看版本資訊
 docker compose logs | grep -i version
 ```
 
-**注意**: 更新前建議備份配置文件。使用 digest 固定版本可確保部署的可重現性。
+**注意**: 更新前建議備份配置文件。使用版本 tag 可確保跨平台部署的一致性。
 
 ---
 
