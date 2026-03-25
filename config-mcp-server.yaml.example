@@ -5,7 +5,7 @@ config:
     filter: debug  # 日誌級別 (debug, info, warn, error)
 
 binds:
-- port: 32110
+- port: 32010
   listeners:
   - routes:
     - policies:

@@ -4,8 +4,8 @@ services:
     image: ghcr.io/agentgateway/agentgateway:0.8.2
     command: ["-f", "/config/config.yaml"]
     ports:
-      - "32110:32110"          # MCP proxy endpoint
-      - "0.0.0.0:32111:15000" # Admin UI
+      - "32010:32010"          # MCP proxy endpoint
+      - "0.0.0.0:32011:15000" # Admin UI
     volumes:
       - ./config.yaml:/config/config.yaml:ro
     restart: unless-stopped
